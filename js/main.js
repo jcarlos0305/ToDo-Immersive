@@ -1,6 +1,8 @@
 //TODO APP
 document.addEventListener('DOMContentLoaded', function () {
 
+  console.log("Hello world!")
+
   // select elements from the DOM
   var todoList = document.getElementById('todoList');
   var addTodo = document.getElementById('addTodo');
