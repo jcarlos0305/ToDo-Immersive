@@ -1,9 +1,31 @@
+import reducer from './reducer'
 var yo = require('yo-yo')
-var uuid = require('uuid/v1')
+var EventEmitter = require('events')
 
-var actions = []
+
+const state = {
+  actions: []
+}
+
+const bus = new EventEmitter
+bus.on('update', update)
+  reducer(bus, state)
+
+var item = {
+  id: '',
+  name: '',
+  status: ''
+}
 var text = "todoVal"
-var el = list(actions, update, removeAction)
+var el = list(state.actions, addItem, removeItem)
+var li = listItem(item, removeItem)
+
+function listItem(item, remove) {
+  return yo `<li id=${item.id}>
+        ${item.name}
+        ${item.status === 'pending' ? yo `<input type="checkbox" onclick=${remove}>` : yo `<button onclick=${remove} class="btn">Delete</button>`}       
+    </li>`
+}
 
 function list(items, onclick, remove) {
   return yo `<div>
@@ -13,59 +35,37 @@ function list(items, onclick, remove) {
     <ul>
       ${items.map(function (item) {
           if (item.status === 'pending') {
-            return yo`<li id=${item.id}>
-                ${item.name}
-                <input type="checkbox" onclick=${remove} class="btn">
-            </li>`
-          }        
+            return listItem(item, remove)
+          } 
       })}
     </ul>   
     Done
     <ul>
       ${items.map(function (item) {
         if (item.status === 'done') {
-            return yo`<li id=${item.id}>
-                ${item.name}
-                <button onclick=${remove} class="btn">Pending</button>
-            </li>`
+            return listItem(item, remove)
         }        
       })}
     </ul>     
   </div>`
 }
 
-function update() {
-
-  let action = {
-    id: uuid(),
-    name: document.getElementById(text).value,
-    status: 'pending'
-  }
-
-  actions.push(action)
-
-  document.getElementById(text).value = ""
-
-  var newList = list(actions, update, removeAction)
+function update(state) {
+  var newList = list(state.actions, addItem, removeItem)
   yo.update(el, newList)
 }
 
-function removeAction(ev) {
+function addItem() {
+  let name = document.getElementById(text)
+  bus.emit('addItem', name.value)
+  name.value = ''
+}
 
+
+function removeItem(ev) {
   let id = ev.target.parentNode.getAttribute('id')
-  actions = actions.filter(function (action) {
-      if (id === action.id) {
-          if (action.status === 'pending') {
-            action.status = 'done'              
-          }else{
-              action.status = 'pending'
-          }
-      }
-    return action;
-  })
+  bus.emit('removeItem', id)
 
-  var newList = list(actions, update, removeAction)
-  yo.update(el, newList)
 }
 
 document.body.appendChild(el)
